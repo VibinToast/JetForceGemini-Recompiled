@@ -116,12 +116,13 @@
                     <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(11)">
                         <label class="config-option__title">Check for Updates</label>
                         <div class="config-option__list">
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(11)" name="jfg_check_for_updates" data-checked="check_for_updates" value="1" id="jfg_check_for_updates_on" style="nav-up: #jfg_skip_launcher_on; nav-down: #jfg_update_channel_0;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(11)" name="jfg_check_for_updates" data-checked="check_for_updates" value="1" id="jfg_check_for_updates_on" style="nav-up: #jfg_skip_launcher_on; " data-style-nav-down="android_hidden ? '#jfg_show_official_pack_on' : '#jfg_update_channel_0'"/>
                             <label class="config-option__tab-label" for="jfg_check_for_updates_on">On</label>
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(11)" name="jfg_check_for_updates" data-checked="check_for_updates" value="0" id="jfg_check_for_updates_off" style="nav-up: #jfg_skip_launcher_off; nav-down: #jfg_update_channel_1;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(11)" name="jfg_check_for_updates" data-checked="check_for_updates" value="0" id="jfg_check_for_updates_off" style="nav-up: #jfg_skip_launcher_off; " data-style-nav-down="android_hidden ? '#jfg_show_official_pack_off' : '#jfg_update_channel_1'"/>
                             <label class="config-option__tab-label" for="jfg_check_for_updates_off">Off</label>
                         </div>
                     </div>
+                    <div data-if="!android_hidden">
                     <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(12)">
                         <label class="config-option__title">Update Channel</label>
                         <div class="config-option__list">
@@ -131,12 +132,13 @@
                             <label class="config-option__tab-label" for="jfg_update_channel_1">Testing</label>
                         </div>
                     </div>
+                    </div>
                     <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(13)">
                         <label class="config-option__title">Official HD Texture Pack</label>
                         <div class="config-option__list">
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(13)" name="jfg_show_official_pack" data-checked="show_official_pack" value="1" id="jfg_show_official_pack_on" style="nav-up: #jfg_update_channel_0; nav-down: #jfg_show_advanced_on;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(13)" name="jfg_show_official_pack" data-checked="show_official_pack" value="1" id="jfg_show_official_pack_on" style="nav-down: #jfg_show_advanced_on;" data-style-nav-up="android_hidden ? '#jfg_check_for_updates_on' : '#jfg_update_channel_0'"/>
                             <label class="config-option__tab-label" for="jfg_show_official_pack_on">On</label>
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(13)" name="jfg_show_official_pack" data-checked="show_official_pack" value="0" id="jfg_show_official_pack_off" style="nav-up: #jfg_update_channel_1; nav-down: #jfg_show_advanced_off;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(13)" name="jfg_show_official_pack" data-checked="show_official_pack" value="0" id="jfg_show_official_pack_off" style="nav-down: #jfg_show_advanced_off;" data-style-nav-up="android_hidden ? '#jfg_check_for_updates_off' : '#jfg_update_channel_1'"/>
                             <label class="config-option__tab-label" for="jfg_show_official_pack_off">Off</label>
                         </div>
                     </div>

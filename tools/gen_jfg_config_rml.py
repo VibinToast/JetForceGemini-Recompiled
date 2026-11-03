@@ -181,6 +181,12 @@ CONTROLS_DESC = "\n".join(
 ADVANCED_GROUPS = ("Fly Camera (F7)",)
 ADVANCED_KEYS = ("frame_rate", "aim_drag_margin", "aim_drag_return", "aim_offset_x", "aim_offset_y", "aim_offset_z")
 GROUP_HIDDEN_BY = {"Mouse & Keyboard": "mk_hidden", **{g: "advanced_hidden" for g in ADVANCED_GROUPS}}
+# Options with no effect on Android, hidden there (android_hidden, ui_config.cpp): Android has one graphics API
+# (Vulkan), its builds are never offered updates, and the app reads no input in the background.
+ANDROID_HIDDEN_KEYS = ("api_option", "update_channel", "background_input")
+# Rows hidden in the handheld layout (the "handheld" class, ui_state.cpp; on for Android) by the style sheets instead:
+# Window Mode, the Graphics tab's first row, which the handheld layout's navigation already points past.
+HANDHELD_HIDDEN_KEYS = ("wm_option",)
 # Rows bound to the tab's own data model (ui_config.cpp) instead of a saved option: left out of the option key lists.
 UI_ONLY_KEYS = ("show_advanced",)
 
@@ -271,13 +277,14 @@ def option_markup(items, first_nav_up, last_nav_down="none"):
     # tab; None leaves it automatic), the last row's Down to last_nav_down (nowhere by default).
     # A locked row (LOCKED_BY) can't take the focus, so while its lock is on, Up/Down jump over the locked rows next to it
     # (a data-style-nav-* attribute, see nav_locked, in place of the fixed property).
-    # Rows of a hidden group (GROUP_HIDDEN_BY) and hidden rows (ADVANCED_KEYS) are skipped like locked ones while hidden;
+    # Rows of a hidden group (GROUP_HIDDEN_BY) and hidden rows (ADVANCED_KEYS, ANDROID_HIDDEN_KEYS) are skipped like locked ones while hidden;
     # a row both hidden and locked is skipped while either holds.
     hidden_by, group_hide = {}, None
     for kind, key, title, _, _ in items:
         if kind == "group": group_hide = GROUP_HIDDEN_BY.get(title)
         elif group_hide: hidden_by[key] = group_hide
         elif key in ADVANCED_KEYS: hidden_by[key] = "advanced_hidden"
+        elif key in ANDROID_HIDDEN_KEYS: hidden_by[key] = "android_hidden"
     rows = [row_ids(kind, key, extra) for kind, key, _, extra, _ in items if kind != "group"]
     locks = [" || ".join(c for c in (hidden_by.get(key), LOCKED_BY.get(key)) if c) or None
              for kind, key, _, _, _ in items if kind != "group"]
@@ -320,7 +327,8 @@ def option_markup(items, first_nav_up, last_nav_down="none"):
         lock = LOCKED_BY.get(key)
         locked_style = (' data-style-opacity="' + lock + " ? '0.4' : '1'" + '"') if lock else ''
         locked_attr = f' data-attrif-disabled="{lock}"' if lock else ''
-        out.append(f'                    <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index({idx})"{locked_style}>')
+        handheld = " jfg-desktop-only" if key in HANDHELD_HIDDEN_KEYS else ""
+        out.append(f'                    <div class="config-option jfg-option{handheld}" data-event-mouseover="set_cur_config_index({idx})"{locked_style}>')
         out.append(f'                        <label class="config-option__title">{t}</label>')
         if kind == "bool":
             out.append('                        <div class="config-option__list">')
@@ -410,7 +418,7 @@ TEXTURE_PACKS = '''                    <div class="config-option" style="margin:
                         </div>
                         <div style="display: block; width: 100%;">
                             <button class="button" style="display: inline-block; margin: 8dp; nav-up: auto; nav-down: auto; nav-left: #tab_jfg_textures;" data-event-click="reload_pack()">Reload Pack</button>
-                            <button class="button" style="display: inline-block; margin: 8dp; nav-up: auto; nav-down: auto; nav-left: auto;" data-event-click="open_pack_folder()">Open Texture Packs Folder</button>
+                            <span class="jfg-desktop-only"><button class="button" style="display: inline-block; margin: 8dp; nav-up: auto; nav-down: auto; nav-left: auto;" data-event-click="open_pack_folder()">Open Texture Packs Folder</button></span>
                         </div>
                         <div class="jfg-note" style="display: block; margin: 8dp 12dp 0dp; font-size: 18dp; line-height: 26dp;">Packs are the folders (or .rtz files) in the texture_packs folder next to the game. F6 switches packs while playing. Reload after adding or changing files. <span>{{dump_status}}</span></div>
                     </div>'''

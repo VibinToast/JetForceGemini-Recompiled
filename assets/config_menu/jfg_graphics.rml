@@ -8,7 +8,7 @@
                 <div class="config__wrapper" data-event-mouseout="set_cur_config_index(-1)" style="overflow-y: auto; height: 100%;">
 
                     <div class="config-option" style="margin: 24dp 0dp 0dp;"><label class="config-option__title config-group__title">Window</label></div>
-                    <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(0)">
+                    <div class="config-option jfg-option jfg-desktop-only" data-event-mouseover="set_cur_config_index(0)">
                         <label class="config-option__title">Window Mode</label>
                         <div class="config-option__list">
                             <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(0)" name="jfg_wm_option" data-checked="wm_option" value="0" id="jfg_wm_option_0" style="nav-up: #tab_jfg_graphics; nav-down: #jfg_res_option_0;"/>
@@ -182,12 +182,13 @@
                     <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(17)">
                         <label class="config-option__title">Ray Tracing</label>
                         <div class="config-option__list">
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(17)" name="jfg_ray_tracing" data-checked="ray_tracing" value="1" id="jfg_ray_tracing_on" style="nav-up: #jfg_modern_lighting_on; nav-down: #jfg_api_option_0;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(17)" name="jfg_ray_tracing" data-checked="ray_tracing" value="1" id="jfg_ray_tracing_on" style="nav-up: #jfg_modern_lighting_on; " data-style-nav-down="android_hidden ? '#jfg_ssao_on' : '#jfg_api_option_0'"/>
                             <label class="config-option__tab-label" for="jfg_ray_tracing_on">On</label>
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(17)" name="jfg_ray_tracing" data-checked="ray_tracing" value="0" id="jfg_ray_tracing_off" style="nav-up: #jfg_modern_lighting_off; nav-down: #jfg_api_option_1;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(17)" name="jfg_ray_tracing" data-checked="ray_tracing" value="0" id="jfg_ray_tracing_off" style="nav-up: #jfg_modern_lighting_off; " data-style-nav-down="android_hidden ? '#jfg_ssao_off' : '#jfg_api_option_1'"/>
                             <label class="config-option__tab-label" for="jfg_ray_tracing_off">Off</label>
                         </div>
                     </div>
+                    <div data-if="!android_hidden">
                     <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(18)">
                         <label class="config-option__title">Graphics API</label>
                         <div class="config-option__list">
@@ -199,13 +200,14 @@
                             <label class="config-option__tab-label" for="jfg_api_option_2">Vulkan</label>
                         </div>
                     </div>
+                    </div>
                     <div class="config-option" style="margin: 24dp 0dp 0dp;"><label class="config-option__title config-group__title">Ambient Occlusion</label></div>
                     <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(19)">
                         <label class="config-option__title">Ambient Occlusion (SSAO)</label>
                         <div class="config-option__list">
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(19)" name="jfg_ssao" data-checked="ssao" value="1" id="jfg_ssao_on" style="nav-up: #jfg_api_option_0; nav-down: #jfg_ssao_strength_input;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(19)" name="jfg_ssao" data-checked="ssao" value="1" id="jfg_ssao_on" style="nav-down: #jfg_ssao_strength_input;" data-style-nav-up="android_hidden ? '#jfg_ray_tracing_on' : '#jfg_api_option_0'"/>
                             <label class="config-option__tab-label" for="jfg_ssao_on">On</label>
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(19)" name="jfg_ssao" data-checked="ssao" value="0" id="jfg_ssao_off" style="nav-up: #jfg_api_option_1; nav-down: #jfg_ssao_strength_input;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(19)" name="jfg_ssao" data-checked="ssao" value="0" id="jfg_ssao_off" style="nav-down: #jfg_ssao_strength_input;" data-style-nav-up="android_hidden ? '#jfg_ray_tracing_off' : '#jfg_api_option_1'"/>
                             <label class="config-option__tab-label" for="jfg_ssao_off">Off</label>
                         </div>
                     </div>

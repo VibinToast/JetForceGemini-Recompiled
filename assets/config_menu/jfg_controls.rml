@@ -233,9 +233,10 @@
                         <label class="config-option__title">Rumble Strength</label>
                         <div class="config-option__range-wrapper config-option__list">
                             <label class="config-option__range-label">{{rumble_strength}}%</label>
-                            <input class="nav-vert" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(24)" id="jfg_rumble_strength_input" type="range" min="0" max="100" style="flex: 1; margin: 0dp; nav-up: #jfg_joystick_range_input; nav-down: #jfg_background_input_on;" data-value="rumble_strength"/>
+                            <input class="nav-vert" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(24)" id="jfg_rumble_strength_input" type="range" min="0" max="100" style="flex: 1; margin: 0dp; nav-up: #jfg_joystick_range_input; " data-style-nav-down="android_hidden ? '#jfg_mouse_keyboard_on' : '#jfg_background_input_on'" data-value="rumble_strength"/>
                         </div>
                     </div>
+                    <div data-if="!android_hidden">
                     <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(25)">
                         <label class="config-option__title">Background Input</label>
                         <div class="config-option__list">
@@ -245,14 +246,15 @@
                             <label class="config-option__tab-label" for="jfg_background_input_off">Off</label>
                         </div>
                     </div>
+                    </div>
                     <div data-if="!mk_hidden"><div class="config-option" style="margin: 24dp 0dp 0dp;"><label class="config-option__title config-group__title">Mouse &amp; Keyboard</label></div></div>
                     <div data-if="!mk_hidden">
                     <div class="config-option jfg-option" data-event-mouseover="set_cur_config_index(26)">
                         <label class="config-option__title">Mouse and Keyboard Controls</label>
                         <div class="config-option__list">
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(26)" name="jfg_mouse_keyboard" data-checked="mouse_keyboard" value="1" id="jfg_mouse_keyboard_on" style="nav-up: #jfg_background_input_on; nav-down: #jfg_mouse_camera_speed_input;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(26)" name="jfg_mouse_keyboard" data-checked="mouse_keyboard" value="1" id="jfg_mouse_keyboard_on" style="nav-down: #jfg_mouse_camera_speed_input;" data-style-nav-up="android_hidden ? '#jfg_rumble_strength_input' : '#jfg_background_input_on'"/>
                             <label class="config-option__tab-label" for="jfg_mouse_keyboard_on">On</label>
-                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(26)" name="jfg_mouse_keyboard" data-checked="mouse_keyboard" value="0" id="jfg_mouse_keyboard_off" style="nav-up: #jfg_background_input_off; nav-down: #jfg_mouse_camera_speed_input;"/>
+                            <input type="radio" data-event-blur="set_cur_config_index(-1)" data-event-focus="set_cur_config_index(26)" name="jfg_mouse_keyboard" data-checked="mouse_keyboard" value="0" id="jfg_mouse_keyboard_off" style="nav-down: #jfg_mouse_camera_speed_input;" data-style-nav-up="android_hidden ? '#jfg_rumble_strength_input' : '#jfg_background_input_off'"/>
                             <label class="config-option__tab-label" for="jfg_mouse_keyboard_off">Off</label>
                         </div>
                     </div>

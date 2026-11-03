@@ -851,6 +851,8 @@ class ConfigTabsetListener : public Rml::EventListener {
                         for (const JfgTabFirst& t : jfg_tab_first_ids) {
                             if (tab_id == t.tab) jfg_first = std::string("#") + t.first;
                         }
+                        // Handheld layout: Window Mode is hidden, so the Graphics tab starts at Resolution.
+                        if (dino::config::handheld_ui() && jfg_first == "#jfg_wm_option_0") jfg_first = "#jfg_res_option_0";
                     }
                     for (size_t i = 0; i < num_children; i++) {
                         if (!jfg_first.empty()) tabs->GetChild(i)->SetProperty(Rml::PropertyId::NavDown, Rml::Property{ jfg_first, Rml::Unit::STRING });
@@ -1523,6 +1525,14 @@ public:
     static inline bool jfg_show_advanced = false;
     void bind_advanced_hidden(Rml::DataModelConstructor& constructor) {
         constructor.BindFunc("advanced_hidden", [](Rml::Variant& out) { out = !jfg_show_advanced; });
+        // And the options with no effect on Android (tools/gen_jfg_config_rml.py, ANDROID_HIDDEN_KEYS).
+        constructor.BindFunc("android_hidden", [](Rml::Variant& out) {
+#ifdef __ANDROID__
+            out = true;
+#else
+            out = false;
+#endif
+        });
     }
 
     // JFG PORT: one binding per option key, read and written through jfg::settings (or upstream_options).
