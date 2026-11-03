@@ -2,7 +2,7 @@
 //
 // The current settings stay in jfg_port_options.txt and jfg_weapons.txt; choosing a profile resets every setting to
 // the game's own behaviour and then applies the profile's values. Built-in profiles: Original (the original game;
-// "Default" before 1.3), Modern, Modern and Balanced, Extreme. A new player starts on Modern (start_new_player_profile). Player profiles are bin\profiles\<name>.txt (option lines, and weapon lines with "weapon." in front)
+// "Default" before 1.3), Modern, Modern and Balanced, Modern (Achievements), Extreme. A new player starts on Modern (start_new_player_profile). Player profiles are bin\profiles\<name>.txt (option lines, and weapon lines with "weapon." in front)
 // and follow changes made while they are active. The active profile's name is kept in jfg_profile.txt.
 // Not part of profiles: cheats, the texture pack choice, texture dumping and the language.
 #include <algorithm>
@@ -67,6 +67,17 @@ const BuiltinProfile BUILTIN_PROFILES[] = {
       "weapon.12.modify=1\nweapon.12.damage=25\nweapon.12.delay=0\nweapon.12.throw_delay=30\nweapon.12.lifetime=30\nweapon.12.spread_x=80\nweapon.12.spread_y=32\nweapon.12.speed_x100=820\nweapon.12.size=100\nweapon.12.charge=100\nweapon.12.mines=8\nweapon.12.no_heat=0\n"
       "weapon.13.modify=1\nweapon.13.damage=10\nweapon.13.delay=30\nweapon.13.throw_delay=20\nweapon.13.lifetime=100\nweapon.13.spread_x=0\nweapon.13.spread_y=0\nweapon.13.speed_x100=1200\nweapon.13.size=100\nweapon.13.charge=100\nweapon.13.mines=8\nweapon.13.no_heat=0\n"
       "weapon.14.modify=1\nweapon.14.damage=8\nweapon.14.delay=0\nweapon.14.throw_delay=26\nweapon.14.lifetime=30\nweapon.14.spread_x=80\nweapon.14.spread_y=32\nweapon.14.speed_x100=1520\nweapon.14.size=100\nweapon.14.charge=100\nweapon.14.mines=8\nweapon.14.no_heat=0\n" },
+    // Modern for RetroAchievements: Keep Area Progress and Permanent Tribal Saves off, since they let an area's challenge be
+    // split over several visits (jfg_achievements.cpp, options_caution).
+    { "Modern (Achievements)", "Modern, with Keep Area Progress and Permanent Tribal Saves off so every RetroAchievements challenge plays as designed. "
+                               "Its dual-stick controls use the Built-in Button Layout in place of your controller bindings.",
+      "start_skips_cutscenes=1\nshow_fps=0\nwidescreen=1\nhud_corners=1\nframe_rate=0\nsmooth_motion=60\nshow_level=0\nshow_pack=0\ndump_by_level=0\n"
+      "no_lod=1\nfar_objects=1\nssao=1\nssao_strength=30\nssao_radius=139\nbloom=1\nbloom_intensity=40\nbloom_threshold=19\n"
+      "bloom_radius=6\ndual_stick=1\ninvert_aim_y=0\nswap_triggers=0\ndual_layout=1\ninvert_aim_normal=0\ninvert_camera_y=0\naim_from_character=0\n"
+      "move_speed=110\ncamera_speed_h=134\ncamera_speed_v=107\naim_shoulder=1\naim_centered=1\naim_speed=100\n"
+      "aim_jump=1\nmouse_keyboard=1\nmouse_camera_speed=100\nmouse_aim_speed=100\ninvert_mouse_y=0\nrefuel_speed=300\nsniper_fixed_zoom=1\nsniper_zoom=365\n"
+      "damage_taken=100\ndive_speed=100\nfly_speed=100\nfly_freeze=1\nfly_hide_hud=1\n"
+      "normalize_diagonal=1\naim_even_speed=1\nsprint=1\nkeep_area_progress=0\npermanent_tribals=0\n" },
     { "Extreme", "Modern visuals, smoothed to 60 fps with Display Frame Rate, with everything turned up: much faster movement and over-the-top weapons, "
                  "just for fun. Its dual-stick controls use the Built-in Button Layout in place of your controller bindings.",
       "start_skips_cutscenes=1\nframe_rate=0\nsmooth_motion=60\nwidescreen=1\nhud_corners=1\nno_lod=1\nfar_objects=1\n"

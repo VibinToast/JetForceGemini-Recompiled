@@ -88,3 +88,9 @@ int jfg_http_download(const std::string& url, const std::filesystem::path& file,
                       const std::function<bool(uint64_t done, uint64_t total)>& progress);
 // The SHA-256 of a file, as lower case hex.
 bool jfg_sha256_file(const std::filesystem::path& file, std::string& hex);
+// A small HTTPS request (RetroAchievements, src/jfg/jfg_achievements.cpp): a GET, or a POST of *post_data when it is
+// given. True when a response came back (status holds the HTTP status). Blocking: call it from a worker thread.
+// Android (Java), Windows (WinHTTP) and Linux (curl); elsewhere it returns false. A POST body is never written to a file
+// or a command line.
+bool jfg_http_request(const std::string& url, const std::string* post_data, const std::string& content_type,
+                      const std::string& user_agent, int& status, std::string& body);

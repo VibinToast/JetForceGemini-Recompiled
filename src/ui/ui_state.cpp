@@ -48,6 +48,7 @@ void jfg_config_step_tab(int dir); // JFG PORT: src/ui/ui_config.cpp
 void jfg_restore_menu_place(); // JFG PORT: src/ui/ui_config.cpp, the menu reopens where it was closed
 bool jfg_config_slider_step(int dir, float held_secs, bool bumper); // JFG PORT: src/ui/ui_config.cpp
 void jfg_launcher_ui_tick(); // JFG PORT: src/ui/ui_launcher.cpp
+void jfg_achievements_idle(); // JFG PORT: src/jfg/jfg_achievements.cpp
 void jfg_config_pack_join_tick(); // JFG PORT: src/ui/ui_config.cpp (split texture packs)
 void jfg_launcher_step_page(int dir); // JFG PORT: src/ui/ui_launcher.cpp (controller: LB / RB)
 void jfg_launcher_start_pressed(); // JFG PORT: src/ui/ui_launcher.cpp (controller: Start)
@@ -1222,6 +1223,7 @@ void draw_hook(plume::RenderCommandList* command_list, plume::RenderFramebuffer*
         prev_height = height;
 
         jfg_launcher_ui_tick(); // JFG PORT: animates the launcher's About page
+        jfg_achievements_idle(); // JFG PORT: RetroAchievements requests made while no game frames run
         jfg_config_pack_join_tick(); // JFG PORT: joins split texture packs, shows the progress
         jfg_switch_language(ui_state->context); // JFG PORT: a language picked from the Language list
         if (jfg::locale::ui_has_accents()) { // JFG PORT: capitals with accents (jfg_upper_latin_texts)

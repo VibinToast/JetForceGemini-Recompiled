@@ -27,6 +27,7 @@
 #include "common/sdl.hpp"
 #include "ui/recomp_ui.h"
 #include "jfg/jfg_update_check.h"
+#include "jfg/jfg_achievements.h"
 
 #include "runtime/audio.hpp"
 #include "runtime/crash.hpp"
@@ -261,6 +262,8 @@ int main(int argc, char** argv) {
     // JFG PORT: bin\jfg_launcher.txt (src/jfg/jfg_update_check.cpp). A ROM path there starts the game straight away, as
     // --rom <path> --skip-launcher would, unless --rom or --launcher was given. It also holds check_for_updates.
     jfg_launcher_config_load(dino::config::get_app_folder_path());
+    // JFG PORT: RetroAchievements (casual), once the player has logged in (src/jfg/jfg_achievements.cpp).
+    jfg_achievements_init(dino::config::get_app_folder_path(), version_string);
     static std::string config_rom;
     if (cli_args.rom_path == nullptr && !cli_args.force_launcher && !jfg_launcher_config_rom().empty()) {
         config_rom = jfg_launcher_config_rom();

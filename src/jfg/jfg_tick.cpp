@@ -21,6 +21,7 @@
 #include "debug_ui/debug_ui.hpp"
 #include "debug_ui/backend.hpp"
 #include "jfg_api.h"
+#include "jfg_achievements.h"
 #include "jfg_fields.h"
 #include "jfg_game.h"
 #include "jfg_hooks.h"
@@ -63,6 +64,7 @@ extern "C" void jfg_debug_frame(uint8_t* rdram, recomp_context* ctx) {
         ::jfg_note_code_mods();
     }
     jfg::api::fire(rdram, ctx, jfg::api::Event::GameTick, (int32_t)rd32(ADDR_delayDat));
+    jfg_achievements_frame(rdram);
     jfg::api::mod_camera_tick();
     jfg_camera_restore();
     load_options();
@@ -238,7 +240,12 @@ extern "C" void jfg_debug_frame(uint8_t* rdram, recomp_context* ctx) {
     std::string script_text;
     float script_alpha = 0.0f;
     const bool script_toast = lua_overlay_text(script_text, script_alpha);
-    dino::debug_ui::backend::set_overlay(hint_active || g.show_fps || g.show_level || g.show_pack || pack_toast || save_toast || update_toast || script_toast);
+    // RetroAchievements (jfg_achievements.cpp): unlock banners, one at a time.
+    JfgRaBanner ra_banner;
+    float ra_t = 0.0f;
+    const bool ra_toast = jfg_achievements_banner(ra_banner, ra_t);
+    const std::vector<JfgRaIndicator> ra_indicators = jfg_achievements_indicators(); // primed achievements' badges
+    dino::debug_ui::backend::set_overlay(hint_active || g.show_fps || g.show_level || g.show_pack || pack_toast || save_toast || update_toast || script_toast || ra_toast || !ra_indicators.empty());
 
     dino::debug_ui::ui_frame_begin();
     if (hint_active && dino::debug_ui::backend::in_ui_frame()) {
@@ -311,6 +318,84 @@ extern "C" void jfg_debug_frame(uint8_t* rdram, recomp_context* ctx) {
             ImGui::GetColorU32(ImVec4(1.0f, 178 / 255.0f, 26 / 255.0f, alpha)), line1.c_str());
         dl->AddText(font, small, ImVec2(size.x * 0.5f - e2.x * 0.5f, box0.y + pad + e1.y + pad * 0.3f),
             ImGui::GetColorU32(ImVec4(232 / 255.0f, 243 / 255.0f, 1.0f, alpha)), line2);
+    }
+    if (ra_toast && dino::debug_ui::backend::in_ui_frame()) {
+        // RetroAchievements banner, top middle: a small gold header, the title, the description, and the points on the
+        // right. Slides in from above and fades out.
+        const ImVec2 size = ImGui::GetIO().DisplaySize;
+        ImFont* font = ImGui::GetFont();
+        const float title_size = std::max(20.0f, size.y / 28.0f), small = title_size * 0.7f;
+        const float pad = title_size * 0.6f;
+        const float max_text = size.x * 0.5f;
+        const std::string points = ra_banner.points > 0 ? std::to_string(ra_banner.points) + " pts" : std::string();
+        const ImVec2 e_head = font->CalcTextSizeA(small, FLT_MAX, 0.0f, ra_banner.header.c_str());
+        const ImVec2 e_title = font->CalcTextSizeA(title_size, FLT_MAX, max_text, ra_banner.title.c_str());
+        const ImVec2 e_detail = ra_banner.detail.empty() ? ImVec2(0, 0) : font->CalcTextSizeA(small, FLT_MAX, max_text, ra_banner.detail.c_str());
+        const ImVec2 e_points = points.empty() ? ImVec2(0, 0) : font->CalcTextSizeA(title_size, FLT_MAX, 0.0f, points.c_str());
+        const float text_w = std::max({ e_head.x, e_title.x, e_detail.x });
+        const float width = text_w + (points.empty() ? 0.0f : e_points.x + pad * 1.5f) + pad * 2.0f;
+        const float height = e_head.y + e_title.y + (ra_banner.detail.empty() ? 0.0f : e_detail.y + pad * 0.2f) + pad * 2.0f;
+        const float slide = ra_t < 0.25f ? (1.0f - ra_t / 0.25f) : 0.0f;
+        float alpha = ra_t > JFG_RA_BANNER_SECONDS - 0.5f ? (JFG_RA_BANNER_SECONDS - ra_t) / 0.5f : 1.0f;
+        alpha = std::clamp(alpha, 0.0f, 1.0f);
+        // Below the update note when both are up (it uses the same top-middle spot).
+        const float top = size.y * 0.04f + toolbar_offset() + (update_toast ? size.y * 0.13f : 0.0f);
+        const ImVec2 box0(size.x * 0.5f - width * 0.5f, top - slide * (height + top));
+        const ImVec2 box1(box0.x + width, box0.y + height);
+        const ImU32 gold = ImGui::GetColorU32(ImVec4(1.0f, 178 / 255.0f, 26 / 255.0f, alpha));
+        ImDrawList* dl = ImGui::GetForegroundDrawList();
+        dl->AddRectFilled(box0, box1, ImGui::GetColorU32(ImVec4(5 / 255.0f, 11 / 255.0f, 28 / 255.0f, 0.9f * alpha)), pad * 0.3f);
+        dl->AddRect(box0, box1, gold, pad * 0.3f, 0, 2.0f);
+        float y = box0.y + pad;
+        dl->AddText(font, small, ImVec2(box0.x + pad, y), gold, ra_banner.header.c_str());
+        y += e_head.y;
+        dl->AddText(font, title_size, ImVec2(box0.x + pad, y), ImGui::GetColorU32(ImVec4(232 / 255.0f, 243 / 255.0f, 1.0f, alpha)),
+                    ra_banner.title.c_str(), nullptr, max_text);
+        y += e_title.y + pad * 0.2f;
+        if (!ra_banner.detail.empty())
+            dl->AddText(font, small, ImVec2(box0.x + pad, y), ImGui::GetColorU32(ImVec4(129 / 255.0f, 153 / 255.0f, 191 / 255.0f, alpha)),
+                        ra_banner.detail.c_str(), nullptr, max_text);
+        if (!points.empty())
+            dl->AddText(font, title_size, ImVec2(box1.x - pad - e_points.x, box0.y + height * 0.5f - e_points.y * 0.5f), gold, points.c_str());
+    }
+    if (!ra_indicators.empty() && dino::debug_ui::backend::in_ui_frame()) {
+        // RetroAchievements challenge indicators: the badges of primed achievements, bottom right, side by side from
+        // the right edge, above where "Game saved" appears. Each badge row is drawn as runs of same-coloured pixels.
+        const ImVec2 size = ImGui::GetIO().DisplaySize;
+        const float icon = std::max(32.0f, size.y * 0.055f), gap = icon * 0.2f;
+        const float bottom = size.y - std::max(16.0f, size.y / 40.0f) * 2.6f - gap;
+        ImDrawList* dl = ImGui::GetForegroundDrawList();
+        const ImU32 gold = ImGui::GetColorU32(ImVec4(1.0f, 178 / 255.0f, 26 / 255.0f, 1.0f));
+        float right = size.x - gap * 1.5f;
+        for (const JfgRaIndicator& indicator : ra_indicators) {
+            const ImVec2 p0(right - icon, bottom - icon), p1(right, bottom);
+            dl->AddRectFilled(ImVec2(p0.x - 2, p0.y - 2), ImVec2(p1.x + 2, p1.y + 2), ImGui::GetColorU32(ImVec4(5 / 255.0f, 11 / 255.0f, 28 / 255.0f, 0.85f)));
+            if (indicator.rgba && indicator.width > 0 && indicator.height > 0) {
+                const std::vector<uint8_t>& px = *indicator.rgba;
+                const float sx = icon / indicator.width, sy = icon / indicator.height;
+                for (int y = 0; y < indicator.height; y++) {
+                    int x = 0;
+                    while (x < indicator.width) {
+                        const uint8_t* c = &px[((size_t)y * indicator.width + x) * 4];
+                        int run = 1;
+                        while (x + run < indicator.width && std::memcmp(c, &px[((size_t)y * indicator.width + x + run) * 4], 4) == 0) run++;
+                        if (c[3] != 0) {
+                            dl->AddRectFilled(ImVec2(p0.x + x * sx, p0.y + y * sy), ImVec2(p0.x + (x + run) * sx, p0.y + (y + 1) * sy),
+                                              IM_COL32(c[0], c[1], c[2], c[3]));
+                        }
+                        x += run;
+                    }
+                }
+            }
+            else {
+                // Still downloading (or no image): a gold "!" in its place.
+                ImFont* font = ImGui::GetFont();
+                const ImVec2 e = font->CalcTextSizeA(icon * 0.7f, FLT_MAX, 0.0f, "!");
+                dl->AddText(font, icon * 0.7f, ImVec2(p0.x + icon * 0.5f - e.x * 0.5f, p0.y + icon * 0.5f - e.y * 0.5f), gold, "!");
+            }
+            dl->AddRect(ImVec2(p0.x - 2, p0.y - 2), ImVec2(p1.x + 2, p1.y + 2), gold, 0.0f, 0, 2.0f);
+            right -= icon + gap;
+        }
     }
     if (save_toast && dino::debug_ui::backend::in_ui_frame()) {
         // Auto save: a small note in the bottom right corner, out of the way of the HUD's middle.

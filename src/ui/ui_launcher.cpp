@@ -19,6 +19,7 @@ static std::string version_string;
 #include "jfg/jfg_update_check.h"
 #include "jfg/jfg_pack_install.h"
 #include "jfg/jfg_mod_store.h" // JFG PORT: the Get Mods page
+#include "jfg/jfg_achievements.h" // JFG PORT: RetroAchievements, on the Play page
 #include "jfg/jfg_locale.h" // JFG PORT: texts set from here in the chosen language (jfg::locale::ui)
 #include "input/input.hpp" // JFG PORT: get_scanned_input_index (Esc on the bindings page)
 // A newer release exists (src/jfg/jfg_update_check.cpp): a banner on the Play page and a warning triangle next to the
@@ -252,6 +253,9 @@ static bool store_sources_dialog = false;
 static int store_sources_on = 0;
 // Its Add box (someone else's collection, "owner/repo" or its address) and why the last Add failed.
 static Rml::String store_add_text, store_add_msg;
+// JFG PORT: the RetroAchievements block on the Play page. The password field is emptied as soon as it has been sent.
+static Rml::String ra_user, ra_pass;
+static uint32_t ra_serial_seen = 0;
 static Rml::String store_filter = "all", store_selected;
 static Rml::String store_text, store_sel_name, store_sel_desc, store_sel_meta, store_sel_deps, store_sel_note, store_sel_thumb;
 static Rml::String store_sel_action;
@@ -453,6 +457,14 @@ void jfg_launcher_scroll(float pixels) {
 
 // Called every UI frame (ui_state.cpp): steps the VibinToast icon while the About page is shown.
 void jfg_launcher_ui_tick() {
+    // RetroAchievements block (Play page): shown again when the login or the game's progress changes.
+    if (model_handle) {
+        const JfgRaStatus ra = jfg_achievements_status();
+        if (ra.serial != ra_serial_seen) {
+            ra_serial_seen = ra.serial;
+            for (const char* name : { "ra_logged_in", "ra_busy", "ra_status", "ra_progress", "ra_caution" }) model_handle.DirtyVariable(name);
+        }
+    }
     jfg::locale::debug_pick();
     // A language picked here or anywhere else: the list's choice and every text this file sets.
     if (model_handle) {
@@ -886,6 +898,34 @@ public:
         constructor.Bind("store_sources_dialog", &store_sources_dialog);
         constructor.Bind("store_sources_on", &store_sources_on);
         constructor.Bind("store_add_text", &store_add_text);
+        // RetroAchievements block on the Play page (src/jfg/jfg_achievements.cpp)
+        constructor.Bind("ra_user", &ra_user);
+        constructor.Bind("ra_pass", &ra_pass);
+        constructor.BindFunc("ra_logged_in", [](Rml::Variant& out) { out = jfg_achievements_status().state == JfgRaState::LoggedIn; });
+        constructor.BindFunc("ra_busy", [](Rml::Variant& out) { out = jfg_achievements_status().state == JfgRaState::LoggingIn; });
+        constructor.BindFunc("ra_status", [](Rml::Variant& out) {
+            const JfgRaStatus ra = jfg_achievements_status();
+            switch (ra.state) {
+                case JfgRaState::LoggedIn: out = Rml::String("Logged in as " + ra.user + " (" + std::to_string(ra.points) + " casual points)"); break;
+                case JfgRaState::LoggingIn: out = Rml::String("Logging in..."); break;
+                case JfgRaState::Failed: out = Rml::String("Login failed: " + ra.message); break;
+                default: out = Rml::String("Not logged in."); break;
+            }
+        });
+        constructor.BindFunc("ra_progress", [](Rml::Variant& out) {
+            const JfgRaStatus ra = jfg_achievements_status();
+            out = ra.game_loaded ? Rml::String("Jet Force Gemini: " + std::to_string(ra.unlocked) + " of " + std::to_string(ra.total) + " achievements unlocked")
+                                 : Rml::String("Your progress shows here once the game has started.");
+        });
+        constructor.BindFunc("ra_caution", [](Rml::Variant& out) { out = Rml::String(jfg_achievements_status().caution); });
+        constructor.BindEventCallback("ra_login", [](Rml::DataModelHandle handle, Rml::Event&, const Rml::VariantList&) {
+            jfg_achievements_login(ra_user, ra_pass);
+            ra_pass.clear();
+            handle.DirtyVariable("ra_pass");
+        });
+        constructor.BindEventCallback("ra_logout", [](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) {
+            jfg_achievements_logout();
+        });
         constructor.Bind("store_add_msg", &store_add_msg);
         // Add: the box's collection joins the sources (its catalog loads in the background); the box empties.
         constructor.BindEventCallback("store_add_source", [](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) {

@@ -45,7 +45,11 @@
 #pragma comment(lib, "winhttp.lib")
 #pragma comment(lib, "bcrypt.lib")
 #elif defined(__linux__)
+#include <fcntl.h>
+#include <pthread.h>
+#include <signal.h>
 #include <spawn.h>
+#include <sys/wait.h>
 #include <unistd.h>
 extern char** environ;
 #endif
@@ -818,6 +822,146 @@ int jfg_http_download(const std::string& url, const fs::path& file, uint64_t exp
 #endif
     if (cancelled) return -1;
     return ok && write_ok ? 1 : 0;
+}
+
+bool jfg_http_request(const std::string& url, const std::string* post_data, const std::string& content_type,
+                      const std::string& user_agent, int& status, std::string& body) {
+    status = 0;
+    body.clear();
+    if (url.rfind("https://", 0) != 0) return false;
+#if defined(__ANDROID__)
+    std::string response;
+    const bool ok = with_activity_class([&](JNIEnv* env, jclass cls) {
+        jmethodID method = env->GetStaticMethodID(cls, "httpRequest",
+            "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
+        if (method == nullptr) return false;
+        jstring jurl = env->NewStringUTF(url.c_str());
+        jstring jpost = post_data != nullptr ? env->NewStringUTF(post_data->c_str()) : nullptr;
+        jstring jtype = env->NewStringUTF(content_type.c_str());
+        jstring jagent = env->NewStringUTF(user_agent.c_str());
+        auto result = static_cast<jstring>(env->CallStaticObjectMethod(cls, method, jurl, jpost, jtype, jagent));
+        for (jstring s : { jurl, jpost, jtype, jagent }) if (s != nullptr) env->DeleteLocalRef(s);
+        if (result == nullptr) return false;
+        const char* utf = env->GetStringUTFChars(result, nullptr);
+        response = utf;
+        env->ReleaseStringUTFChars(result, utf);
+        env->DeleteLocalRef(result);
+        return true;
+    });
+    const size_t newline = response.find('\n');
+    if (!ok || newline == std::string::npos) return false;
+    status = std::atoi(response.substr(0, newline).c_str());
+    body = response.substr(newline + 1);
+    return status > 0;
+#elif defined(_WIN32)
+    wchar_t host[256] = {}, path[2048] = {}, extra[2048] = {};
+    URL_COMPONENTS parts = {};
+    parts.dwStructSize = sizeof(parts);
+    parts.lpszHostName = host;      parts.dwHostNameLength = 256;
+    parts.lpszUrlPath = path;       parts.dwUrlPathLength = 2048;
+    parts.lpszExtraInfo = extra;    parts.dwExtraInfoLength = 2048;
+    const std::wstring wurl = widen(url);
+    if (!WinHttpCrackUrl(wurl.c_str(), (DWORD)wurl.size(), 0, &parts) || parts.nScheme != INTERNET_SCHEME_HTTPS) return false;
+    const std::wstring target = std::wstring(path) + extra;
+
+    HINTERNET session = WinHttpOpen(widen(user_agent).c_str(), WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (session == nullptr) return false;
+    WinHttpSetTimeouts(session, 8000, 8000, 30000, 30000);
+    HINTERNET connection = WinHttpConnect(session, host, parts.nPort, 0);
+    HINTERNET request = connection == nullptr ? nullptr :
+        WinHttpOpenRequest(connection, post_data != nullptr ? L"POST" : L"GET", target.c_str(), nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
+    std::wstring headers;
+    if (post_data != nullptr) headers = L"Content-Type: " + widen(content_type.empty() ? std::string("application/x-www-form-urlencoded") : content_type) + L"\r\n";
+    // The body is handed to WinHTTP in memory, so it never reaches a file or a command line.
+    LPVOID data = post_data != nullptr ? (LPVOID)post_data->data() : WINHTTP_NO_REQUEST_DATA;
+    const DWORD data_size = post_data != nullptr ? (DWORD)post_data->size() : 0;
+    if (request != nullptr &&
+        WinHttpSendRequest(request, headers.empty() ? WINHTTP_NO_ADDITIONAL_HEADERS : headers.c_str(), (DWORD)-1L, data, data_size, data_size, 0) &&
+        WinHttpReceiveResponse(request, nullptr)) {
+        DWORD code = 0, size = sizeof(code);
+        WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &code, &size, WINHTTP_NO_HEADER_INDEX);
+        char buffer[16 * 1024];
+        DWORD got = 0;
+        bool finished = false;
+        while (WinHttpReadData(request, buffer, (DWORD)sizeof(buffer), &got)) {
+            if (got == 0) { finished = true; break; }
+            body.append(buffer, got);
+        }
+        if (finished) status = (int)code;
+    }
+    if (request != nullptr) WinHttpCloseHandle(request);
+    if (connection != nullptr) WinHttpCloseHandle(connection);
+    WinHttpCloseHandle(session);
+    if (status <= 0) body.clear();
+    return status > 0;
+#elif defined(__linux__)
+    // curl, started without a shell: the POST body goes to its standard input (--data-binary @-), so nothing of it is
+    // on the command line or in a file; the status is appended after the body (-w).
+    std::vector<std::string> args = { "curl", "-sS", "-m", "30", "--proto", "=https", "-A", user_agent };
+    if (post_data != nullptr) {
+        args.insert(args.end(), { "-H", "Content-Type: " + (content_type.empty() ? std::string("application/x-www-form-urlencoded") : content_type),
+                                  "--data-binary", "@-" });
+    }
+    args.insert(args.end(), { "-w", "\n%{http_code}", url });
+    std::vector<char*> argv;
+    for (std::string& a : args) argv.push_back(a.data());
+    argv.push_back(nullptr);
+
+    int in_pipe[2], out_pipe[2];
+    if (pipe(in_pipe) != 0) return false;
+    if (pipe(out_pipe) != 0) { close(in_pipe[0]); close(in_pipe[1]); return false; }
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawn_file_actions_adddup2(&actions, in_pipe[0], STDIN_FILENO);
+    posix_spawn_file_actions_adddup2(&actions, out_pipe[1], STDOUT_FILENO);
+    posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
+    for (int fd : { in_pipe[0], in_pipe[1], out_pipe[0], out_pipe[1] }) posix_spawn_file_actions_addclose(&actions, fd);
+    pid_t pid = 0;
+    const bool spawned = posix_spawnp(&pid, "curl", &actions, nullptr, argv.data(), environ) == 0;
+    posix_spawn_file_actions_destroy(&actions);
+    close(in_pipe[0]);
+    close(out_pipe[1]);
+    if (spawned && post_data != nullptr) {
+        // Small (an RA request), so it fits the pipe; written before reading, and a failed write just fails the request.
+        // SIGPIPE (curl gone before reading it) is held for this thread and dropped, so it can't end the game.
+        sigset_t pipe_set, old_set;
+        sigemptyset(&pipe_set);
+        sigaddset(&pipe_set, SIGPIPE);
+        pthread_sigmask(SIG_BLOCK, &pipe_set, &old_set);
+        const char* p = post_data->data();
+        size_t left = post_data->size();
+        bool broken = false;
+        while (left > 0) {
+            const ssize_t n = write(in_pipe[1], p, left);
+            if (n <= 0) { broken = true; break; }
+            p += n;
+            left -= (size_t)n;
+        }
+        if (broken) {
+            const timespec no_wait = { 0, 0 };
+            sigtimedwait(&pipe_set, nullptr, &no_wait);
+        }
+        pthread_sigmask(SIG_SETMASK, &old_set, nullptr);
+    }
+    close(in_pipe[1]);
+    std::string response;
+    if (spawned) {
+        char buffer[4096];
+        ssize_t got;
+        while ((got = read(out_pipe[0], buffer, sizeof(buffer))) > 0) response.append(buffer, (size_t)got);
+        int wstatus = 0;
+        waitpid(pid, &wstatus, 0);
+    }
+    close(out_pipe[0]);
+    const size_t newline = response.rfind('\n');
+    if (newline == std::string::npos) return false;
+    status = std::atoi(response.substr(newline + 1).c_str());
+    body = response.substr(0, newline);
+    return status > 0;
+#else
+    (void)post_data; (void)content_type; (void)user_agent;
+    return false;
+#endif
 }
 
 bool jfg_sha256_file(const fs::path& file, std::string& hex) {

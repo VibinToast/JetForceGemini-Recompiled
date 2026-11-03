@@ -25,3 +25,6 @@
 [submodule "JFGRecompSyms"]
 	path = JFGRecompSyms
 	url = https://github.com/VibinToast/JFGRecompSyms.git
+[submodule "lib/rcheevos"]
+	path = lib/rcheevos
+	url = https://github.com/RetroAchievements/rcheevos.git

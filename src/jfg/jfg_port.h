@@ -352,7 +352,7 @@ std::vector<ToolField> weapon_fields();    // the Weapons window (F10)
 
 // --- jfg_profiles.cpp --------------------------------------------------------------------------------------------
 struct BuiltinProfile { const char* name; const char* description; const char* text; };
-extern const BuiltinProfile BUILTIN_PROFILES[4];
+extern const BuiltinProfile BUILTIN_PROFILES[5];
 extern std::string g_active_profile;   // "" = none chosen (the settings as they are)
 extern std::string g_profile_message;
 extern std::vector<std::string> g_user_profiles;

@@ -373,6 +373,11 @@
 			.st-actions { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; margin-top: 8dp; }
 			.st-state { display: block; margin: 20dp 28dp 4dp 0dp; font-family: "JetBrains Mono"; font-weight: bold; font-size: 19dp; color: #3CF07A; }
 			.st-state.st-blocked { color: #FF6B5E; }
+			/* RetroAchievements, on the Play page */
+			.ra-field { display: block; margin-top: 18dp; max-width: 640dp; }
+			.ra-label { display: block; font-size: 19dp; line-height: 26dp; color: #8199BF; margin-bottom: 6dp; }
+			.ra-input { display: block; width: 100%; margin-right: 0dp; }
+			.ra-block { margin-top: 24dp; }
 			.st-progress { display: block; margin-top: 20dp; }
 			.st-progress-text { display: block; margin-bottom: 8dp; font-family: "JetBrains Mono"; font-size: 18dp; color: #E8F3FF; }
 			.st-result { display: block; margin-top: 12dp; font-family: "JetBrains Mono"; font-size: 17dp; line-height: 24dp; color: #8199BF; }
@@ -494,6 +499,27 @@
 											<div class="rl-skip-note">On: the game starts straight away with this ROM next time. In the game, the launcher button next to Quit in the settings menu (Select / Esc) brings you back here.</div>
 										</div>
 									</div>
+									<!-- RetroAchievements in casual mode (src/jfg/jfg_achievements.cpp) -->
+									<div class="rl-block-shadow ra-block"><div class="rl-block">
+										<div class="rl-heading">RetroAchievements</div>
+										<div class="rl-text">{{ra_status}}</div>
+										<div data-if="!ra_logged_in">
+											<div class="ra-field"><div class="ra-label">Username</div>
+												<input type="text" id="ra_user" class="st-add-text ra-input" data-value="ra_user" maxlength="64" style="nav-left: #nav_play; nav-down: #ra_pass;"
+													data-style-nav-up="rom_valid ? '#rl_skip_launcher' : '#rl_start'"/></div>
+											<div class="ra-field"><div class="ra-label">Password</div>
+												<input type="password" id="ra_pass" class="st-add-text ra-input" data-value="ra_pass" maxlength="128" style="nav-left: #nav_play; nav-up: #ra_user; nav-down: #ra_login;"/></div>
+											<div class="rl-action-shadow"><button id="ra_login" class="rl-action" data-event-click="ra_login()" data-attrif-disabled="ra_busy"
+												style="nav-left: #nav_play; nav-up: #ra_pass; nav-down: #rl_changelogs;">Log in</button></div>
+										</div>
+										<div data-if="ra_logged_in">
+											<div class="rl-text">{{ra_progress}}</div>
+											<div class="rl-text rl-muted" data-if="ra_caution != ''">{{ra_caution}}</div>
+											<div class="rl-action-shadow"><button id="ra_logout" class="rl-action rl-action--outline" data-event-click="ra_logout()"
+												style="nav-left: #nav_play; nav-down: #rl_changelogs;" data-style-nav-up="rom_valid ? '#rl_skip_launcher' : '#rl_start'">Log out</button></div>
+										</div>
+										<div class="rl-text rl-muted">Casual (softcore) mode, with every setting of this port available. Your password is used once to log in and isn't stored; only RetroAchievements' login token is kept, and Log out removes it. Nothing is sent to RetroAchievements until you log in.</div>
+									</div></div>
 									<div class="rl-keys">
 										<div class="rl-heading">While playing</div>
 										<div class="rl-key-row"><div class="rl-key">Select / Esc</div><div>This settings menu (Profiles, General, Gameplay, Controls, Graphics and the rest)</div></div>
