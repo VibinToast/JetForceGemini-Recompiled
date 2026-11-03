@@ -244,6 +244,14 @@ if (WIN32)
         URL https://github.com/libsdl-org/SDL/releases/download/release-${SDL2_VERSION}/SDL2-devel-${SDL2_VERSION}-VC.zip
     )
     FetchContent_MakeAvailable(sdl2)
+    # JFG PORT: SDL_endian.h defines _m_prefetch for clang-cl, which clang 22 (Visual Studio, 2026-11) has built in:
+    # "definition of builtin function '_m_prefetch'". Skip SDL's copy when the compiler has one (still in SDL 2.32.10).
+    set(JFG_SDL_ENDIAN "${sdl2_SOURCE_DIR}/include/SDL_endian.h")
+    file(READ "${JFG_SDL_ENDIAN}" JFG_SDL_ENDIAN_TEXT)
+    string(REPLACE "#ifndef __PRFCHWINTRIN_H\n" "#if !defined(__PRFCHWINTRIN_H) && !__has_builtin(_m_prefetch)\n" JFG_SDL_ENDIAN_FIXED "${JFG_SDL_ENDIAN_TEXT}")
+    if (NOT JFG_SDL_ENDIAN_FIXED STREQUAL JFG_SDL_ENDIAN_TEXT)
+        file(WRITE "${JFG_SDL_ENDIAN}" "${JFG_SDL_ENDIAN_FIXED}")
+    endif()
     target_include_directories(JetForceGeminiRecompiled PRIVATE
         ${sdl2_SOURCE_DIR}/include
     )
