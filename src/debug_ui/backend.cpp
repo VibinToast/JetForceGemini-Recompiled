@@ -362,7 +362,11 @@ static void rt64_init_hook(plume::RenderInterface* _interface, plume::RenderDevi
             initInfo.QueueFamily = queueFamily;
             initInfo.Queue = queue;
             initInfo.DescriptorPool = vulkanContext->descriptorPool;
-            initInfo.DescriptorPoolSize = IMGUI_IMPL_VULKAN_MINIMUM_SAMPLED_IMAGE_POOL_SIZE; // JFG PORT: ImGui 1.92+ makes its own pool (more than one texture)
+            // JFG PORT: ImGui 1.92+ makes its own pool, one descriptor set per live texture: the font atlas and the
+            // overlay's (jfg_overlay.cpp draws each string as its own texture). Its minimum of 8 runs out with a few
+            // strings on screen, and drivers that enforce the pool's size (Adreno) then fail every new texture, which
+            // draws as a blank square.
+            initInfo.DescriptorPoolSize = 1024;
             initInfo.PipelineInfoMain.RenderPass = vulkanContext->renderPass;
             initInfo.PipelineInfoMain.Subpass = 0;
             initInfo.MinImageCount = 2;
